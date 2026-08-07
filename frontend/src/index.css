@@ -1,0 +1,761 @@
+@import "tailwindcss";
+
+/* ================================================================
+   GLAUX LEDGER "DAYLIGHT" DESIGN TOKENS
+
+   The daylight member of the Glaux NYX system. Same brand primitives as
+   useglaux and Glaux Markets: gleam gold, verdigris, ember, the Marcellus /
+   Schibsted Grotesk / Spline Sans Mono trio, the 9/14/20 radius scale, the
+   three-duration motion language, but on paper instead of nyx.
+
+   Why not simply reuse the dark theme: Markets is read at a desk, often at
+   night, where an unlit instrument panel is right. Ledger is read at a shop
+   counter in Sri Lankan daylight, on a mid-range phone at partial brightness.
+   A dark UI cannot outrun the sun; its effective contrast collapses outdoors
+   where a light one holds. So the surface inverts and everything else stays.
+   That also settles the family problem: Ledger is legibly a Glaux product
+   without being a recolour of Markets.
+
+   The inversion runs deeper than the background. The hub is a cool ground with
+   a warm gleam bleeding across it; Ledger is a warm ground, the paper ledger
+   this app replaces, with cool nyx ink on top. Same tension, reversed.
+
+   Colour values are not hand-picked. NYX was tuned to glow on near-black, and
+   every primitive fails on paper: gleam manages 1.76:1, far under the 4.5:1
+   body text needs. tools/derive_palette.py holds each hue fixed in OKLCH and
+   walks lightness down until it clears, so the on-light siblings pass contrast
+   while drifting under 3 degrees of hue. Run it before changing any of these.
+   ================================================================ */
+
+@theme {
+  /* ---- brand primitives, shared verbatim across Glaux ---- */
+  --color-nyx: #070b12;
+  --color-gleam: #e9b45c;
+  --color-verdigris: #45b98e;
+  --color-ember: #d85f55;
+
+  /* ---- ground and surfaces ---- */
+  --color-paper: #faf7f2;
+  --color-card: #ffffff;
+  --color-sunk: #f3f2ef;
+
+  /* Hairlines are mist flattened over paper, not neutral grey, so even the
+     dividers carry the cool cast against the warm ground. */
+  --color-line: #e2e4e6;
+  --color-line-soft: #ededec;
+  --color-line-strong: #7a8ca7;
+
+  /* ---- text ---- */
+  --color-ink: #070b12;
+  --color-mute: #5e6f8a;
+  --color-inverse: #faf7f2;
+
+  /* ---- accent ----
+     Gleam is a fill colour: gold behind dark ink reads at 10.46:1 and is how
+     the brand already uses it. As text or a thin stroke on paper it vanishes,
+     so those get the darkened siblings instead. */
+  --color-accent: #956400;
+  --color-accent-edge: #b48122;
+  --color-accent-fill: #e9b45c;
+  --color-accent-fill-hover: #f2c674;
+  --color-accent-wash: #fdf4e3;
+
+  /* ---- semantic ----
+     The same pair Markets uses for upside and downside, carrying the same
+     meaning in a different domain. Money is the only place colour appears. */
+  --color-income: #007e57;
+  --color-expense: #bd473f;
+  --color-income-wash: #e8f4ef;
+  --color-expense-wash: #fbeceb;
+
+  /* ---- type ----
+     Marcellus for brand moments, Grotesk for the interface, and Spline Sans
+     Mono for every figure. The mono is the important one: a ledger lives or
+     dies on digits lining up down a column, and a monospace face guarantees
+     that where a proportional one only offers it via an optional feature.
+     Noto carries Sinhala and Tamil, which none of the three cover. */
+  --font-display: "Marcellus", "Noto Serif Sinhala", Georgia, serif;
+  --font-body:
+    "Schibsted Grotesk", "Noto Sans Sinhala", "Noto Sans Tamil", system-ui,
+    -apple-system, sans-serif;
+  --font-mono:
+    "Spline Sans Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---- radius, from the parent system ---- */
+  --radius-sm: 9px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-sheet: 20px;
+
+  /* ---- motion: three durations, three easings, used everywhere ---- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expressive: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Durations are plain variables rather than @theme entries: Tailwind would turn
+   a --duration-* namespace into utilities that collide with its own scale. */
+:root {
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+}
+
+@layer base {
+  html {
+    /* Stops iOS Safari zooming the whole page when the amount input is focused. */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Overscroll bounce reveals the page background behind a sticky header, which
+       looks broken on a screen whose header is meant to be fixed. */
+    overscroll-behavior-y: none;
+  }
+
+  /* Marcellus ships one weight. Holding 400 stops the browser synthesising a
+     smeared faux-bold, which is what the parent system does too. */
+  .font-display {
+    font-weight: 400;
+  }
+
+  /* Never remove a focus ring without replacing it. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::selection {
+    background: var(--color-gleam);
+    color: var(--color-nyx);
+  }
+
+  /* Amounts must line up in a column, or scanning a list gets slower. Spline Sans
+     Mono is already fixed-width; the feature settings cover the fallback faces. */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -0.01em;
+  }
+}
+
+@utility safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Section labels as mono caps on wide tracking, the parent system's signature for
+   anything that names data rather than being data. --tracking-caps is 0.16em there. */
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-mute);
+}
+
+/* The parent pairs its eyebrow with a small gold dot. There it glows; on paper a glow
+   would read as a printing smudge, so the dot is simply solid. */
+@utility eyebrow-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+
+  &::before {
+    content: "";
+    flex: none;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-accent-fill);
+  }
+}
+
+/* The one divider, dissolving at both ends rather than butting into the margins. */
+@utility rule {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-line) 18%,
+    var(--color-line) 82%,
+    transparent
+  );
+}
+
+/* The brand's one gradient, so every primary surface across Glaux matches. */
+@utility bg-brand {
+  background-image: linear-gradient(135deg, #e9b45c 0%, #f2c674 100%);
+}
+
+/* Motion is opt-in per element, and every use is disabled below. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The desktop counterpart. Rising from the bottom edge is meaningless once the panel is
+   centred, so it settles in place instead. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-sheet-in {
+  animation: sheet-in var(--dur-slow) var(--ease-out);
+}
+
+/* Matches Tailwind's `sm` breakpoint, which is where BottomSheet stops anchoring to the
+   bottom edge. Switching here rather than in the component avoids measuring the viewport
+   in JS and the flash of wrong-animation that would come with it. */
+@media (width >= 40rem) {
+  .animate-sheet-in {
+    animation: dialog-in var(--dur-base) var(--ease-out);
+  }
+}
+
+/* ================================================================
+   INTERACTION LAYER
+
+   Ported from the parent system's motion language, in CSS. Framer Motion is what
+   useglaux uses, but that is a desktop marketing page; this is a PWA opened dozens
+   of times a day on a mid-range phone over Sri Lankan mobile data, and none of the
+   effects below need a runtime to express.
+
+   Two rules govern everything here:
+
+   1. Every hover choreography is gated behind (hover: hover) and (pointer: fine).
+      A touch device fires :hover on tap and then keeps it until you touch something
+      else, so an ungated hover state is a stuck state.
+   2. Anything that starts an element invisible or displaced lives inside
+      (prefers-reduced-motion: no-preference). Putting the initial state outside it
+      and only killing the animation would leave reduced-motion users staring at
+      content that never arrives.
+   ================================================================ */
+
+/* ---- reveal on scroll ---- */
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Applied by the Reveal component once the element enters the viewport. The delay is
+     a custom property so a list can cascade its rows without a class per index. */
+  .reveal-in {
+    animation: reveal-in 550ms var(--ease-out) both;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+/* ---- the hairline row ----
+   The parent's best device and the one that suits a ledger: on hover a gold spine wipes
+   up the left edge, a gold wash grows in from the left, and the content shifts right.
+   It says "this row is live" without a filled background, which on a list of amounts
+   would fight the figures for attention. */
+
+@utility row-live {
+  position: relative;
+  isolation: isolate;
+  transition: background-color var(--dur-base) var(--ease-standard);
+
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(233, 180, 92, 0.14),
+      rgba(233, 180, 92, 0.04) 46%,
+      transparent 78%
+    );
+    opacity: 0;
+    transform: scaleX(0.76);
+    transform-origin: left center;
+    transition:
+      opacity var(--dur-base) var(--ease-standard),
+      transform 520ms var(--ease-out);
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 16%;
+    bottom: 16%;
+    left: 0;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--color-accent-fill);
+    opacity: 0;
+    transform: scaleY(0.3);
+    transition:
+      opacity var(--dur-base) var(--ease-standard),
+      transform 520ms var(--ease-out);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row-live:hover::before {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .row-live:hover::after {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+
+  .row-live:hover .row-shift {
+    transform: translateX(5px);
+  }
+}
+
+.row-shift {
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+/* Per-row controls. On touch they are simply always there: there is no hover to
+   reveal them, and hiding them behind one would make them unreachable. On a pointer
+   device they fade in with the row, so a long list is not a wall of icons. */
+.row-action {
+  transition:
+    opacity var(--dur-base) var(--ease-standard),
+    color var(--dur-base) var(--ease-standard),
+    background-color var(--dur-base) var(--ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .row-action {
+    opacity: 0;
+  }
+
+  .row-live:hover .row-action,
+  .row-action:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* A row whose only control is a small button still deserves a visible focus state, so
+   focus anywhere inside outlines the whole row and the inner ring is suppressed. */
+.row-live:has(:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- the sheen ----
+   A skewed translucent band swept across a filled surface. Used twice: once on hover
+   over the primary button, and once looping as the loading shimmer, which is why it is
+   defined as a shared keyframe rather than inline in either. */
+
+@keyframes sheen-sweep {
+  from {
+    transform: skewX(-18deg) translateX(-220%);
+  }
+  to {
+    transform: skewX(-18deg) translateX(650%);
+  }
+}
+
+@utility sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    inset: -30% auto -30% -45%;
+    width: 32%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.42),
+      transparent
+    );
+    transform: skewX(-18deg) translateX(-220%);
+    transition: transform 780ms var(--ease-out);
+    pointer-events: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sheen:hover::before {
+    transform: skewX(-18deg) translateX(650%);
+  }
+}
+
+/* ---- loading shimmer ----
+   The same band, looped, over a sunk block. Replaces a bare "Loading…" so the layout
+   settles once rather than jumping when the data lands. */
+
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-sunk);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 -45%;
+    width: 40%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.85),
+      transparent
+    );
+    transform: skewX(-18deg) translateX(-220%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton::after {
+    animation: sheen-sweep 1500ms var(--ease-standard) infinite;
+  }
+}
+
+/* ---- lift ----
+   For cards that are themselves a link or button. Paired with a gold edge, because a
+   shadow alone is nearly invisible on warm paper. */
+
+@utility lift {
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-standard),
+    box-shadow var(--dur-base) var(--ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lift:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-accent-edge);
+    box-shadow: 0 14px 30px -18px rgba(7, 11, 18, 0.35);
+  }
+}
+
+/* ---- toast ---- */
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in var(--dur-base) var(--ease-expressive);
+}
+
+.animate-toast-out {
+  animation: toast-out var(--dur-base) var(--ease-standard) forwards;
+}
+
+/* ---- paper grain ----
+   The parent lays fractal noise over near-black at soft-light to turn a flat fill into
+   a matte instrument surface. The same values on white read as dirt, so here it is a
+   multiply at a third of the opacity: just enough tooth to suggest paper. */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.016;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+}
+
+.animate-fade-in {
+  animation: fade-in var(--dur-fast) var(--ease-standard);
+}
+
+/* ================================================================
+   PUBLIC SURFACES
+
+   Everything above this point is the app, which is used at a counter with a
+   customer waiting. Its motion budget is close to nothing on purpose, because
+   a control that moves between the glance and the tap costs time.
+
+   The landing page, the sign-in panel and the legal documents are the opposite
+   case. They are read once, by a stranger deciding whether to trust this with
+   their accounts, and there is no queue behind them. So the expressive half of
+   the parent system's motion language lives down here, and stops at the
+   sign-in wall. Nothing in this block is used by a signed-in surface.
+
+   Still CSS and not a runtime. This is the first paint someone gets over Sri
+   Lankan mobile data, and an animation library to move a heading would be paid
+   for by the person we are trying to convince.
+   ================================================================ */
+
+/* ---- entrance ----
+   The scroll reveal's sibling, for content that is already in view at load.
+   Both read the same delay variable so a section can hand out one scale of
+   stagger whether it animates on load or on scroll. */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise-in 720ms var(--ease-expressive) both;
+    animation-delay: var(--reveal-delay, 0ms);
+  }
+}
+
+/* ---- drifting gleam ----
+   The hero's gold wash, on a slow enough cycle that it reads as depth rather
+   than as something happening. Two blobs on different periods, so they never
+   land back in the same arrangement while anyone is looking.
+
+   Transform only, so the whole thing stays on the compositor: a 44rem blurred
+   radial repainted every frame is exactly the sort of thing that empties a
+   mid-range phone's battery. */
+
+@keyframes drift-near {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-5%, 6%, 0) scale(1.14);
+  }
+}
+
+@keyframes drift-far {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.08);
+  }
+  50% {
+    transform: translate3d(7%, -5%, 0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drift-near {
+    animation: drift-near 24s var(--ease-standard) infinite;
+  }
+
+  .drift-far {
+    animation: drift-far 33s var(--ease-standard) infinite;
+  }
+}
+
+/* ---- ruled paper ----
+   The motif the product is named after, at the threshold of visibility. Masked
+   so the lines dissolve before they reach an edge, which stops the band reading
+   as a texture swatch with a border. */
+
+@utility ruled-nyx {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 43px,
+    rgba(233, 180, 92, 0.055) 43px,
+    rgba(233, 180, 92, 0.055) 44px
+  );
+  mask-image: radial-gradient(
+    ellipse 80% 70% at 50% 38%,
+    #000 0%,
+    transparent 100%
+  );
+}
+
+/* ---- link sweep ----
+   An underline that draws in from the left instead of appearing whole. Uses a
+   background so it never affects layout, which `border-bottom` would. */
+
+@utility link-sweep {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition:
+    background-size var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-standard);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .link-sweep:hover {
+    background-size: 100% 1px;
+  }
+}
+
+/* ---- gold aura ----
+   For the one card on the page that is asking for money. A shadow alone is
+   nearly invisible on warm paper, so the glow is carried by a tinted ring. */
+
+@utility aura-gold {
+  box-shadow:
+    0 0 0 1px rgba(180, 129, 34, 0.3),
+    0 2px 6px -2px rgba(7, 11, 18, 0.06),
+    0 34px 64px -38px rgba(149, 100, 0, 0.55);
+}
+
+/* ---- the landing demo ----
+   An entry arriving in the mock ledger. `grid-template-rows` from 0fr to 1fr is
+   what makes the rows below move down smoothly rather than jumping; browsers
+   without it get the fade alone, which still reads correctly. */
+
+@keyframes entry-land {
+  from {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  55% {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.entry-land {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.entry-land > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .entry-land {
+    animation: entry-land 620ms var(--ease-expressive) both;
+  }
+}
+
+/* The gold wash over a row that has just landed. An overlay rather than a state
+   on the row itself, because it has to end at nothing: the row keeps its own
+   spine, and a finished animation holding its end frame would erase it. */
+@keyframes land-flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Absent rather than present is the right resting state for both of the overlays
+   below. Where the animation is switched off there is nothing to fade, and an
+   un-animated highlight left sitting on a row is a bug that looks like a feature. */
+.land-flash {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .land-flash {
+    animation: land-flash 1600ms var(--ease-out) both;
+  }
+}
+
+/* The ring around the capture button while it is listening or reading. Two
+   copies on a half-cycle offset, so there is always one expanding. */
+@keyframes pulse-ring {
+  from {
+    opacity: 0.5;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.85);
+  }
+}
+
+.pulse-ring {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse-ring {
+    animation: pulse-ring 2000ms var(--ease-out) infinite;
+  }
+
+  .pulse-ring-late {
+    animation-delay: 1000ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Collapse rather than remove: an animation with zero duration still fires its
+     end event, so nothing that waits on one can hang. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

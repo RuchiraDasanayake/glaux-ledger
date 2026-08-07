@@ -1,0 +1,6 @@
+# Cloudflare Pages. Deploy with `npx wrangler pages deploy dist` after `npm run build`,
+# or connect the repo in the dashboard with root directory `frontend/`, build
+# `npm run build`, output `dist`.
+name = "glaux-ledger"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "dist"

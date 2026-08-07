@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Environment
+.env
+.env.local
+*.local
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+.vite/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Build artifacts
+/frontend/dev-dist/
+/backend/sample-report.pdf
+
+# Theme spot-check screenshots from frontend/tools/shoot.mjs
+/frontend/.shots/
+
+# Database dumps, if backup.py is pointed at its default directory. These are a
+# customer's financial records; they do not belong in version control under any
+# circumstances, including "just this once, to move them to the new laptop".
+backups/
+*.dump
+
+# Report fonts are not committed; see backend/app/services/fonts.py
+/backend/app/assets/fonts/*.ttf

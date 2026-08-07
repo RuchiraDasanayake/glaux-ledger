@@ -1,0 +1,31 @@
+# Web framework
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+python-multipart==0.0.32
+
+# Database
+SQLAlchemy==2.0.51
+alembic==1.18.5
+psycopg[binary]==3.3.4
+
+# Config / validation
+pydantic==2.13.4
+pydantic-settings==2.14.2
+email-validator==2.3.0
+# zoneinfo has no tz database to read on Windows, nor in slim Linux images.
+tzdata==2026.3
+
+# Auth. pwdlib replaces passlib, which does not work on Python 3.13+ (PEP 594 removed
+# the stdlib `crypt` module). PyJWT replaces python-jose, which is unmaintained.
+PyJWT==2.13.0
+pwdlib[argon2]==0.3.0
+
+# Reports
+reportlab==5.0.0
+
+# HTTP client for the optional OpenAI parsing adapters, and for the test client.
+httpx==0.28.1
+
+# Error reporting. Inert unless SENTRY_DSN is set, and configured with PII off; see
+# app/core/observability.py for why that matters more here than in most apps.
+sentry-sdk[fastapi]==2.44.0

@@ -1,0 +1,2 @@
+# SPA fallback: client routes like /dashboard must not 404 on refresh.
+/*    /index.html   200

@@ -1,0 +1,24 @@
+# Local environments and secrets - never bake into the image.
+.venv/
+venv/
+.env
+.env.local
+*.local
+
+# Caches and bytecode
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+
+# Dev / test / local tooling - not needed at runtime.
+tests/
+scripts/
+tools/
+seed_demo.py
+smoke_e2e.py
+*.md
+pyproject.toml

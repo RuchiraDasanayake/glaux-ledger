@@ -1,0 +1,23 @@
+[project]
+name = "glaux-ledger-api"
+version = "0.1.0"
+description = "Glaux Ledger SME bookkeeping API"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    "error::DeprecationWarning:app.*",
+    # Starlette prefers httpx2 for its TestClient; httpx works fine and adding a second
+    # HTTP client just for tests is not worth the dependency.
+    "ignore:Using `httpx` with `starlette.testclient`",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B008"]  # FastAPI's Depends() in defaults is the documented idiom
