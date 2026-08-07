@@ -1,0 +1,2 @@
+deploy/vps/**/*.sh text eol=lf
+deploy/vps/postgres/init/*.sh text eol=lf

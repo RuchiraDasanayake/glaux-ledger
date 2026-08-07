@@ -1,31 +1,35 @@
 # Deploying Glaux Ledger
 
-Two deployments: the API and Postgres on Railway, the frontend on Cloudflare Pages.
+Recommended production shape: **API + Postgres on a VPS**, frontend on **Cloudflare Pages**.
+Railway remains supported if you prefer less ops.
 
 Order matters: the API has to exist before the frontend can be pointed at it, and the
-frontend origin has to exist before CORS can be locked down. Expect to set
-`CORS_ORIGINS` twice.
+frontend origin has to exist before CORS can be locked down.
 
 ## What it costs, honestly
 
-This is a product being sold. Budget **around $5–12 a month** before the first customer,
-mostly Railway:
-
-| | Plan | Why not the free one |
+| | Plan | Notes |
 | --- | --- | --- |
-| Railway | Hobby, $5/month minimum | The free plan is $1 of credit a month, one project, three services and no cron. An always-on API alone eats that; with Postgres beside it you are looking at $5 to $12 a month in practice, and the $5 subscription covers the first $5 of it. |
-| Cloudflare Pages | Free is fine | Commercial use is allowed. Bandwidth and build minutes on Free cover this app; Workers Paid only becomes relevant if you graduate past static hosting. |
-
-The frontend is a folder of static files.
-[frontend/public/_redirects](../frontend/public/_redirects) and
-[frontend/public/_headers](../frontend/public/_headers) are the Cloudflare Pages
-equivalents of the SPA rewrite and cache rules; they copy into `dist` on build and
-translate to a handful of lines of nginx or Caddy if you ever leave Pages.
+| VPS (Contabo etc.) | ~$6–12/month for 4 vCPU / 8 GB | Host Glaux + other Docker apps on one box. You own backups and updates. |
+| Railway | Hobby, ~$5–12/month | Less ops; weaker for multi-project hosting. |
+| Cloudflare Pages | Free is fine | Static frontend + SPA `_redirects` / `_headers`. |
 
 At two shops the hosting costs more than one subscription. At ten it is a rounding error.
-That is the shape of this business and it is better known now than later.
 
-## 1. Backend and database on Railway
+## 0. VPS (recommended)
+
+Step-by-step: **[docs/vps.md](vps.md)**. Compose stack: [`deploy/vps/`](../deploy/vps/).
+
+Short version:
+
+1. Ubuntu VPS, Docker, firewall 22/80/443.
+2. DNS `api.yourdomain.com` → VPS (DNS only / grey cloud for Let's Encrypt).
+3. `cp deploy/vps/.env.example deploy/vps/.env` and fill secrets.
+4. `cd deploy/vps && ./up.sh`
+5. Cloudflare Pages: `VITE_API_BASE_URL=https://api.yourdomain.com`.
+6. Set `CORS_ORIGINS` to the Pages (and custom) origin, recreate API if needed.
+
+## 1. Backend and database on Railway (alternative)
 
 **Create the database.** New project → Add Postgres. Railway provisions it and exposes
 `DATABASE_URL` as a reference variable.

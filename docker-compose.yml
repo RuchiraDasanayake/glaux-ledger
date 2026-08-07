@@ -19,9 +19,8 @@ services:
       timeout: 5s
       retries: 10
 
-  # Only runs under `docker compose --profile full up`. Its purpose is to verify the
-  # production image builds and boots before pushing to Railway; day-to-day dev runs
-  # uvicorn natively for fast reload.
+  # Only under `docker compose --profile full up`: smoke-test the production image
+  # locally. Day-to-day dev runs uvicorn natively. Real VPS deploy: deploy/vps/.
   api:
     profiles: ["full"]
     build:

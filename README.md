@@ -13,15 +13,16 @@ natively for fast reloads.
 
 | Piece | Stack | Runs |
 | --- | --- | --- |
-| `backend/` | FastAPI, SQLAlchemy 2, Alembic, psycopg 3 | `uvicorn --reload`, deploys to Railway from its Dockerfile |
-| `frontend/` | React, Vite, TypeScript, Tailwind v4 | `vite dev`, deploys to Cloudflare Pages as static output |
-| `docker-compose.yml` | Postgres 17 | `docker compose up -d db` |
+| `backend/` | FastAPI, SQLAlchemy 2, Alembic, psycopg 3 | `uvicorn --reload`; production image via Dockerfile |
+| `frontend/` | React, Vite, TypeScript, Tailwind v4 | `vite dev`; Cloudflare Pages static output |
+| `docker-compose.yml` | Postgres 17 (dev) | `docker compose up -d db` |
+| `deploy/vps/` | Postgres + API + Caddy | Production on a Contabo/other VPS; see [docs/vps.md](docs/vps.md) |
 
 Only the database is containerised for development. Bind-mounted source in a container
 makes file watching slow and unreliable on Windows, and the frontend ships as static
-files anyway, so a dev container would buy nothing. The backend Dockerfile exists as the
-production artifact; `docker compose --profile full up` runs it against the same
-Postgres to check the image builds and boots before deploying.
+files anyway, so a dev container would buy nothing. The backend Dockerfile is the
+production artifact; `deploy/vps/` runs it behind Caddy on a VPS. `docker compose
+--profile full up` still boots the API against local Postgres to smoke-test the image.
 
 ### Stack choices that differ from the obvious ones
 
@@ -92,7 +93,7 @@ docker compose up -d db
 cd backend
 python -m venv .venv
 .venv/Scripts/activate          # Windows;  source .venv/bin/activate elsewhere
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 cp .env.example .env            # then set JWT_SECRET
 alembic upgrade head
 uvicorn app.main:app --reload
