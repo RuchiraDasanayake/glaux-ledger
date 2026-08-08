@@ -23,7 +23,7 @@ export function AdminLogin() {
   }
 
   if (status === "authenticated") {
-    return <Navigate to="/admin/payments" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   async function onSubmit(event: React.FormEvent) {
@@ -32,7 +32,7 @@ export function AdminLogin() {
     setBusy(true);
     try {
       await signIn(email.trim(), password);
-      navigate("/admin/payments", { replace: true });
+      navigate("/admin", { replace: true });
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : "Could not sign in.",

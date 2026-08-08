@@ -3,8 +3,10 @@ import { AppShell } from "@/components/AppShell";
 import { AdminAuthProvider } from "@/lib/admin-auth";
 import { useAuth } from "@/lib/auth-context";
 import { AdminLogin } from "@/pages/admin/AdminLogin";
+import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminPayments } from "@/pages/admin/AdminPayments";
 import { AdminShell } from "@/pages/admin/AdminShell";
+import { AdminShops } from "@/pages/admin/AdminShops";
 import { Dashboard } from "@/pages/Dashboard";
 import { Export } from "@/pages/Export";
 import { History } from "@/pages/History";
@@ -23,7 +25,8 @@ export function App() {
         <Route path="/admin" element={<AdminAuthLayout />}>
           <Route path="login" element={<AdminLogin />} />
           <Route element={<AdminShell />}>
-            <Route index element={<Navigate to="payments" replace />} />
+            <Route index element={<AdminOverview />} />
+            <Route path="shops" element={<AdminShops />} />
             <Route path="payments" element={<AdminPayments />} />
           </Route>
         </Route>

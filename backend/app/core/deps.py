@@ -153,6 +153,11 @@ def require_active_subscription(business: CurrentBusiness) -> None:
     a pricing tactic, and a shop that cannot get its records out is a shop that will not
     come back.
     """
+    if business.disabled_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This shop has been suspended. Contact support if that looks wrong.",
+        )
     if business.status is SubscriptionStatus.lapsed:
         raise _PAYMENT_REQUIRED
 

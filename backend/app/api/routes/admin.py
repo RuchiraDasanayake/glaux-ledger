@@ -1,9 +1,9 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -20,8 +20,15 @@ from app.models import (
     PaymentSubmission,
     PaymentSubmissionStatus,
     PlatformUser,
+    SubscriptionStatus,
 )
-from app.schemas.admin import AdminLoginRequest, AdminTokenResponse
+from app.schemas.admin import (
+    AdminLoginRequest,
+    AdminOverviewOut,
+    AdminShopOut,
+    AdminTokenResponse,
+    ExtendShopRequest,
+)
 from app.schemas.payment_submission import (
     AdminPaymentSubmissionOut,
     ApprovalRequest,
@@ -65,6 +72,122 @@ def admin_login(
         email=user.email,
         role=user.role,
     )
+
+
+@router.get("/overview", response_model=AdminOverviewOut)
+def admin_overview(db: PrivilegedSession, _user: CurrentPlatformUser) -> AdminOverviewOut:
+    shops = list(db.scalars(select(Business)))
+    counts = {status: 0 for status in SubscriptionStatus}
+    suspended = 0
+    for shop in shops:
+        if shop.disabled_at is not None:
+            suspended += 1
+        else:
+            counts[shop.status] += 1
+
+    pending = db.scalar(
+        select(func.count())
+        .select_from(PaymentSubmission)
+        .where(PaymentSubmission.status == PaymentSubmissionStatus.pending.value)
+    )
+    week_ago = datetime.now(UTC) - timedelta(days=7)
+    joined = db.scalar(
+        select(func.count()).select_from(Business).where(Business.created_at >= week_ago)
+    )
+    return AdminOverviewOut(
+        shops_total=len(shops),
+        shops_trialing=counts[SubscriptionStatus.trialing],
+        shops_active=counts[SubscriptionStatus.active],
+        shops_lapsed=counts[SubscriptionStatus.lapsed],
+        shops_suspended=suspended,
+        pending_payments=int(pending or 0),
+        shops_joined_7d=int(joined or 0),
+    )
+
+
+@router.get("/shops", response_model=list[AdminShopOut])
+def list_shops(
+    db: PrivilegedSession,
+    _user: CurrentPlatformUser,
+    shop_status: Annotated[SubscriptionStatus | None, Query(alias="status")] = None,
+    q: Annotated[str | None, Query(max_length=120)] = None,
+    suspended: Annotated[bool | None, Query()] = None,
+) -> list[AdminShopOut]:
+    statement = select(Business).order_by(Business.created_at.desc())
+    needle = (q or "").strip()
+    if needle:
+        pattern = f"%{needle}%"
+        statement = statement.where(
+            or_(Business.name.ilike(pattern), Business.owner_email.ilike(pattern))
+        )
+    shops = list(db.scalars(statement))
+    out: list[AdminShopOut] = []
+    for shop in shops:
+        is_suspended = shop.disabled_at is not None
+        if suspended is True and not is_suspended:
+            continue
+        if suspended is False and is_suspended:
+            continue
+        if shop_status is not None and (is_suspended or shop.status is not shop_status):
+            continue
+        out.append(_shop_out(shop))
+    return out
+
+
+@router.get("/shops/{shop_id}", response_model=AdminShopOut)
+def get_shop(
+    shop_id: uuid.UUID, db: PrivilegedSession, _user: CurrentPlatformUser
+) -> AdminShopOut:
+    shop = db.get(Business, shop_id)
+    if shop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shop not found")
+    return _shop_out(shop)
+
+
+@router.post("/shops/{shop_id}/extend", response_model=AdminShopOut)
+def extend_shop(
+    shop_id: uuid.UUID,
+    payload: ExtendShopRequest,
+    db: PrivilegedSession,
+    _user: CurrentPlatformUser,
+) -> AdminShopOut:
+    shop = db.scalar(select(Business).where(Business.id == shop_id).with_for_update())
+    if shop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shop not found")
+    shop.paid_through = extend_paid_through(shop, payload.months)
+    if shop.disabled_at is not None:
+        shop.disabled_at = None
+    db.commit()
+    db.refresh(shop)
+    return _shop_out(shop)
+
+
+@router.post("/shops/{shop_id}/suspend", response_model=AdminShopOut)
+def suspend_shop(
+    shop_id: uuid.UUID, db: PrivilegedSession, _user: CurrentPlatformUser
+) -> AdminShopOut:
+    shop = db.scalar(select(Business).where(Business.id == shop_id).with_for_update())
+    if shop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shop not found")
+    if shop.disabled_at is None:
+        shop.disabled_at = datetime.now(UTC)
+        db.commit()
+        db.refresh(shop)
+    return _shop_out(shop)
+
+
+@router.post("/shops/{shop_id}/unsuspend", response_model=AdminShopOut)
+def unsuspend_shop(
+    shop_id: uuid.UUID, db: PrivilegedSession, _user: CurrentPlatformUser
+) -> AdminShopOut:
+    shop = db.scalar(select(Business).where(Business.id == shop_id).with_for_update())
+    if shop is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shop not found")
+    if shop.disabled_at is not None:
+        shop.disabled_at = None
+        db.commit()
+        db.refresh(shop)
+    return _shop_out(shop)
 
 
 @router.get("/payment-submissions", response_model=list[AdminPaymentSubmissionOut])
@@ -135,6 +258,8 @@ def approve_payment_submission(
         )
     if submission.status == PaymentSubmissionStatus.pending.value:
         business.paid_through = extend_paid_through(business, payload.months)
+        if business.disabled_at is not None:
+            business.disabled_at = None
         submission.status = PaymentSubmissionStatus.approved.value
         submission.reviewed_by = user.id
         submission.reviewed_at = datetime.now(UTC)
@@ -177,6 +302,22 @@ def reject_payment_submission(
         db.commit()
         db.refresh(submission)
     return _review_out(submission, business)
+
+
+def _shop_out(shop: Business) -> AdminShopOut:
+    return AdminShopOut(
+        id=shop.id,
+        name=shop.name,
+        owner_email=shop.owner_email,
+        timezone=shop.timezone,
+        currency=shop.currency,
+        status=shop.status,
+        trial_ends_at=shop.trial_ends_at,
+        trial_days_left=shop.trial_days_left,
+        paid_through=shop.paid_through,
+        disabled_at=shop.disabled_at,
+        created_at=shop.created_at,
+    )
 
 
 def _admin_out(

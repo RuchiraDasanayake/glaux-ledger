@@ -192,6 +192,30 @@ export interface AdminTokenResponse {
   role: AdminRole;
 }
 
+export interface AdminOverview {
+  shops_total: number;
+  shops_trialing: number;
+  shops_active: number;
+  shops_lapsed: number;
+  shops_suspended: number;
+  pending_payments: number;
+  shops_joined_7d: number;
+}
+
+export interface AdminShop {
+  id: string;
+  name: string;
+  owner_email: string;
+  timezone: string;
+  currency: string;
+  status: SubscriptionStatus;
+  trial_ends_at: string;
+  trial_days_left: number;
+  paid_through: string | null;
+  disabled_at: string | null;
+  created_at: string;
+}
+
 /**
  * Product capability flags. Backend field is `ai_parsing_enabled`; the UI treats a
  * missing/false value as capture controls hidden.

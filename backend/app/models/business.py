@@ -31,6 +31,7 @@ class Business(Base, UUIDPrimaryKey, CreatedAt):
     # Paid up to and including this day. Extended by hand as payments arrive; see
     # mark_paid.py. Null means the shop has never paid, which is not the same as lapsed.
     paid_through: Mapped[date | None] = mapped_column(Date, nullable=True)
+    disabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Voice and photo usage, held as the first of the month the count belongs to. Kept
     # here rather than in a usage table: it is one integer per shop that is overwritten
